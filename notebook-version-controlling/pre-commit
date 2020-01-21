@@ -1,0 +1,78 @@
+#!/bin/bash
+
+###############################################################################
+#
+#  Check for .ipynb files with output cells; 
+#    ask the user if they really want to commit them.
+#    If no is chosen, the commit fails (git spawns an error message).
+#    This gives the chance to clear the notebooks and commit again.
+#
+#    (Based on https://stackoverflow.com/questions/54366517/how-do-i-get-the-exit-code-of-a-pid-outside-of-the-parent-shell
+#     Modifications were needed to adapt to the VSCode workflow: The versioning
+#     of VSCode has no direct approach for y/n questions. Here, a new terminal
+#     will be opened, in which the user decides whether he wants to check in a
+#     notebook with output.
+#     This file is to be saved in ${project}/.git/hooks as 'pre-commit')
+#   
+###############################################################################
+
+# Collect the python notebooks in the file
+ipynb_files=`git diff --staged --name-only | awk "/.ipynb/"`
+have_output=""
+
+# List those notebooks that have output -> should probably not be  checked in
+#  to the version control
+if [ -n "$ipynb_files" ]; then
+  while read filename; do
+    if [ $(git show :$filename | grep -cm1 "\"output_type\":") -ge 1 ]; then
+      have_output="${have_output}"$'\n'"$filename"
+    fi
+  done <<< $ipynb_files
+  # Use here string to run in main shell: https://stackoverflow.com/a/16854326
+fi
+
+proceedOrNot() {
+  echo "You appear to be committing Jupyter notebooks that contain output:"
+  echo "$have_output"$'\n'
+  while true; do
+    read -p "Proceed with commit (y/n)?: " resp
+    case $resp in
+      [Yy]* ) exit_status=0; break;;
+      [Nn]* ) exit_status=1; break;;
+          * ) echo "Please answer y or n";;
+    esac
+  done
+  exit $exit_status
+}
+
+# Exit with the exit code from an (interactive command) run in a new window.
+exitWithExitCodeOf() {
+ 
+  #local -r interactiveScriptInNewTerminal=".git/hooks/proceedOrNot" 
+  local -r interactiveScriptInNewTerminal="$1"  
+  local -r scriptArgument="$2"
+  local -r exitStatusFile="$(mktemp XXXXX)"   
+  local exitCode=0
+     
+  # Execute a script in a new window and write its exit status into a temporary file
+  x-terminal-emulator -e "($interactiveScriptInNewTerminal $scriptArgument) ; echo \$? > $exitStatusFile" \
+      &> /dev/null
+
+  # Wait for the commands to no longer be executing in the background, and then get their exit code.   
+  until [ -s "$exitStatusFile" ];
+  do
+      sleep 1
+  done
+  exitCode="$(cat "$exitStatusFile")"
+     
+  # Remove temporary file and exit this program itself using the fetched exit code  
+  rm -rf "$exitStatusFile"  
+  exit $exitCode
+     
+}
+
+if [ -n "$have_output" ]; then
+  interactiveScriptInNewTerminal=".git/hooks/proceedOrNot"  
+  scriptArgument="$have_output"
+  exitWithExitCodeOf $interactiveScriptInNewTerminal $have_output
+fi

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+###############################################################################
+#
+#  Helper script for pre-commit. 
+#    Should be stored as ${project}/.git/hooks/proceedOrNot.
+#    (Must be executable)
+#   
+###############################################################################
+
+# https://stackoverflow.com/a/10015707
+#exec < /dev/tty # allows us to grab user input
+have_output="$1"
+
+echo "You appear to be committing Jupyter notebooks that contain output:"
+echo "$have_output"$'\n'
+while true; do
+  read -p "Proceed with commit (y/n)?: " resp
+  case $resp in
+    [Yy]* ) exit_status=0; break;;
+    [Nn]* ) exit_status=1; break;;
+        * ) echo "Please answer y or n";;
+  esac
+done
+exit $exit_status
+
