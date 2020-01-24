@@ -54,7 +54,7 @@ the built-in git extension of VS Code.
 Two scripts must be added into the `.git/hooks` folder:
 
 - `pre-commit` and
-- `proceedOrNot` (make sure this script is made executable).
+- `proceed_or_not` (make sure this script is made executable).
 
-Note that you have the choice of employing this hook for one project or 
+Note that you have the choice of employing this hook for one project or
 user-wide.

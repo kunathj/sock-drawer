@@ -31,20 +31,6 @@ if [ -n "$ipynb_files" ]; then
   # Use here string to run in main shell: https://stackoverflow.com/a/16854326
 fi
 
-proceedOrNot() {
-  echo "You appear to be committing Jupyter notebooks that contain output:"
-  echo "$have_output"$'\n'
-  while true; do
-    read -p "Proceed with commit (y/n)?: " resp
-    case $resp in
-      [Yy]* ) exit_status=0; break;;
-      [Nn]* ) exit_status=1; break;;
-          * ) echo "Please answer y or n";;
-    esac
-  done
-  exit $exit_status
-}
-
 # Exit with the exit code from an (interactive command) run in a new window.
 exitWithExitCodeOf() {
  
@@ -72,7 +58,7 @@ exitWithExitCodeOf() {
 }
 
 if [ -n "$have_output" ]; then
-  interactiveScriptInNewTerminal=".git/hooks/proceedOrNot"  
+  interactiveScriptInNewTerminal=".git/hooks/proceed_or_not"  
   scriptArgument="$have_output"
   exitWithExitCodeOf $interactiveScriptInNewTerminal $have_output
 fi
